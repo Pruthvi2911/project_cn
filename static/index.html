@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Chat Web UI</title></head>
+<body>
+  <h3>Chat + Upload</h3>
+  Name: <input id="user" value="webuser"><br><br>
+  <div id="chat" style="width:600px;height:300px;border:1px solid #ccc;overflow:auto"></div>
+  <input id="text" placeholder="Type..." style="width:400px">
+  <button id="send">Send</button>
+  <br><br>
+  <input type="file" id="fileinput">
+  <button id="upload">Upload</button>
+
+<script>
+async function fetchMsgs(){
+  try{
+    const res = await fetch('/messages');
+    const arr = await res.json();
+    const chat = document.getElementById('chat');
+    chat.innerHTML = '';
+    arr.forEach(m => {
+      const d = document.createElement('div');
+      d.textContent = `[${m.timestamp}] ${m.user}: ${m.text}`;
+      chat.appendChild(d);
+    });
+    chat.scrollTop = chat.scrollHeight;
+  }catch(e){}
+}
+document.getElementById('send').onclick = async () => {
+  const user = document.getElementById('user').value;
+  const text = document.getElementById('text').value;
+  await fetch('/send_chat', {method:'POST', body: new URLSearchParams({user, text})});
+  document.getElementById('text').value = '';
+};
+document.getElementById('upload').onclick = async () => {
+  const user = document.getElementById('user').value;
+  const f = document.getElementById('fileinput').files[0];
+  if(!f) return alert('choose file');
+  const form = new FormData();
+  form.append('user', user);
+  form.append('file', f);
+  const res = await fetch('/upload', {method:'POST', body: form});
+  const json = await res.json();
+  alert(json.status === 'ok' ? 'Upload OK' : 'Upload failed: ' + (json.msg||''));
+};
+fetchMsgs();
+setInterval(fetchMsgs, 1000);
+</script>
+</body>
+</html>
